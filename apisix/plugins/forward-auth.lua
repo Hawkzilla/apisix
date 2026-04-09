@@ -21,6 +21,8 @@ local http     = require("resty.http")
 local pairs    = pairs
 local type     = type
 local tostring = tostring
+local ngx         = ngx
+local req_set_uri = ngx.req.set_uri
 
 local schema = {
     type = "object",
@@ -105,13 +107,13 @@ end
 
 function _M.access(conf, ctx)
     local auth_headers = {
-        ["X-Forwarded-Proto"] = core.request.get_scheme(ctx),
+        ["X-Forwarded-Proto"] = "http",
         ["X-Forwarded-Method"] = core.request.get_method(),
         ["X-Forwarded-Host"] = core.request.get_host(ctx),
         ["X-Forwarded-Uri"] = ctx.var.request_uri,
         ["X-Forwarded-For"] = core.request.get_remote_client_ip(ctx),
     }
-
+    core.log.error("auth failed, uri: ", ctx.var.request_uri, ", err: ", err)
     if conf.request_method == "POST" then
         auth_headers["Content-Length"] = core.request.header(ctx, "content-length")
         auth_headers["Expect"] = core.request.header(ctx, "expect")
@@ -163,7 +165,13 @@ function _M.access(conf, ctx)
     local httpc = http.new()
     httpc:set_timeout(conf.timeout)
 
-    local res, err = httpc:request_uri(conf.uri, params)
+    local uri = conf.uri
+    if uri and string.find(uri, "$request_uri", 1, true) then
+        uri = string.gsub(uri, "$request_uri", ctx.var.request_uri)
+    end
+
+
+    local res, err = httpc:request_uri(uri, params)
     if not res and conf.allow_degradation then
         return
     elseif not res then
