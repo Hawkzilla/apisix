@@ -287,6 +287,8 @@ local _M = {
     "ext-plugin-post-req",
     "ext-plugin-post-resp",
     "ai-request-rewrite",
+    -- custom plugins for Easystack
+    "proxy-cookie-flags",
   },
   stream_plugins = { "ip-restriction", "limit-conn", "mqtt-proxy", "syslog", "traffic-split" },
   plugin_attr = {
