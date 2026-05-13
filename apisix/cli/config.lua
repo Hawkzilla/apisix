@@ -289,6 +289,7 @@ local _M = {
     "ai-request-rewrite",
     -- custom plugins for Easystack
     "proxy-cookie-flags",
+    "session-cookie-hash",
   },
   stream_plugins = { "ip-restriction", "limit-conn", "mqtt-proxy", "syslog", "traffic-split" },
   plugin_attr = {
