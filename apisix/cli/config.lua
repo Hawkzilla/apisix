@@ -289,6 +289,7 @@ local _M = {
     "ai-request-rewrite",
     -- custom plugins for Easystack
     "proxy-cookie-flags",
+    "proxy-cookie-path",
     "session-cookie-hash",
     "custom-error-page",
   },
