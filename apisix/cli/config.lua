@@ -290,6 +290,7 @@ local _M = {
     -- custom plugins for Easystack
     "proxy-cookie-flags",
     "session-cookie-hash",
+    "custom-error-page",
   },
   stream_plugins = { "ip-restriction", "limit-conn", "mqtt-proxy", "syslog", "traffic-split" },
   plugin_attr = {
