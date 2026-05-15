@@ -292,6 +292,7 @@ local _M = {
     "proxy-cookie-path",
     "session-cookie-hash",
     "custom-error-page",
+    "multi-region-idp-proxy",
   },
   stream_plugins = { "ip-restriction", "limit-conn", "mqtt-proxy", "syslog", "traffic-split" },
   plugin_attr = {
