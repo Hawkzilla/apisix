@@ -20,7 +20,7 @@
 
 local core   = require("apisix.core")
 local string = string
-local re     = require("ngx.re")
+local ngx_re = ngx.re
 local ipairs = ipairs
 local pairs  = pairs
 local type   = type
@@ -165,7 +165,7 @@ local function rewrite_cookie_path(value, conf)
             if is_regex_pattern(match_pattern) then
                 -- Regex match
                 local regex = extract_regex(match_pattern)
-                local from, to, err = re.sub(current_path, regex, replacement, "jo")
+                local from, to, err = ngx_re.sub(current_path, regex, replacement, "jo")
                 if err then
                     core.log.error("proxy-cookie-path: regex error: ", err)
                 elseif from ~= current_path then
