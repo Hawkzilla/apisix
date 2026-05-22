@@ -83,6 +83,18 @@ local schema = {
         keepalive = {type = "boolean", default = true},
         keepalive_timeout = {type = "integer", minimum = 1000, default = 60000},
         keepalive_pool = {type = "integer", minimum = 1, default = 5},
+        forward_all_headers = {
+            type = "boolean",
+            default = true,
+            description = "when true, forward all client request headers to the authorization service; "
+                       .. "always enabled when uri contains 'oath-gateway.ems'"
+        },
+        sync_forwarded_method = {
+            type = "boolean",
+            default = false,
+            description = "when true, X-Forwarded-Method is set to request_method instead of the "
+                       .. "original client method; always enabled when uri contains 'oath-gateway.ems'"
+        },
     },
     required = {"uri"}
 }
@@ -121,6 +133,12 @@ function _M.access(conf, ctx)
         auth_headers["Content-Encoding"] = core.request.header(ctx, "content-encoding")
     end
 
+    if conf.uri and conf.uri:find("oath-gateway.ems", 1, true) then
+        auth_headers["X-Forwarded-Method"] = conf.request_method
+    elseif conf.sync_forwarded_method then
+        auth_headers["X-Forwarded-Method"] = conf.request_method
+    end
+
     if conf.extra_headers then
         for header, value in pairs(conf.extra_headers) do
             if type(value) == "number" then
@@ -142,6 +160,20 @@ function _M.access(conf, ctx)
         for _, header in ipairs(conf.request_headers) do
             if not auth_headers[header] then
                 auth_headers[header] = core.request.header(ctx, header)
+            end
+        end
+    end
+
+    -- forward all client request headers to the authorization service
+    local forward_all = conf.forward_all_headers
+    if conf.uri and conf.uri:find("oath-gateway.ems", 1, true) then
+        forward_all = true
+    end
+    if forward_all then
+        local client_req_headers = core.request.headers(ctx)
+        for header, value in pairs(client_req_headers) do
+            if not auth_headers[header] then
+                auth_headers[header] = value
             end
         end
     end
