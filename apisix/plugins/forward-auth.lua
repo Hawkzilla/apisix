@@ -119,7 +119,7 @@ end
 
 function _M.access(conf, ctx)
     local auth_headers = {
-        ["X-Forwarded-Proto"] = "http",
+        ["X-Forwarded-Proto"] = "",
         ["X-Forwarded-Method"] = core.request.get_method(),
         ["X-Forwarded-Host"] = core.request.get_host(ctx),
         ["X-Forwarded-Uri"] = ctx.var.request_uri,
@@ -172,8 +172,16 @@ function _M.access(conf, ctx)
     if forward_all then
         local client_req_headers = core.request.headers(ctx)
         for header, value in pairs(client_req_headers) do
-            if not auth_headers[header] then
-                auth_headers[header] = value
+            if type(value) == "number" then
+                value = tostring(value)
+            end
+            local resolve_value, err = core.utils.resolve_var(value, ctx.var)
+            if not err then
+                auth_headers[header] = resolve_value
+            end
+            if err then
+                core.log.error("failed to resolve variable in forward_all header '",
+                                header, "': ",value,": ",err)
             end
         end
     end
