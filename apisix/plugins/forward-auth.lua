@@ -85,7 +85,7 @@ local schema = {
         keepalive_pool = {type = "integer", minimum = 1, default = 5},
         forward_all_headers = {
             type = "boolean",
-            default = true,
+            default = false,
             description = "when true, forward all client request headers to the authorization service; "
                        .. "always enabled when uri contains 'oath-gateway.ems'"
         },
@@ -94,6 +94,14 @@ local schema = {
             default = false,
             description = "when true, X-Forwarded-Method is set to request_method instead of the "
                        .. "original client method; always enabled when uri contains 'oath-gateway.ems'"
+        },
+        whitelist_headers = {
+            type = "array",
+            default = {},
+            default = {"x-keystone-token"},
+            items = {type = "string"},
+            description = "list of client request headers (case-insensitive) that are always "
+                       .. "forwarded to the authorization service regardless of forward_all_headers"
         },
     },
     required = {"uri"}
@@ -119,7 +127,7 @@ end
 
 function _M.access(conf, ctx)
     local auth_headers = {
-        ["X-Forwarded-Proto"] = "",
+        ["X-Forwarded-Proto"] = nil,
         ["X-Forwarded-Method"] = core.request.get_method(),
         ["X-Forwarded-Host"] = core.request.get_host(ctx),
         ["X-Forwarded-Uri"] = ctx.var.request_uri,
@@ -137,6 +145,18 @@ function _M.access(conf, ctx)
         auth_headers["X-Forwarded-Method"] = conf.request_method
     elseif conf.sync_forwarded_method then
         auth_headers["X-Forwarded-Method"] = conf.request_method
+    end
+
+    -- always forward whitelisted headers (configurable)
+    if #conf.whitelist_headers > 0 then
+        local client_req_headers = core.request.headers(ctx)
+        for _, header in ipairs(conf.whitelist_headers) do
+            local lower_header = string.lower(header)
+            local value = client_req_headers[lower_header]
+            if value and not auth_headers[header] then
+                auth_headers[header] = value
+            end
+        end
     end
 
     if conf.extra_headers then
@@ -165,23 +185,11 @@ function _M.access(conf, ctx)
     end
 
     -- forward all client request headers to the authorization service
-    local forward_all = conf.forward_all_headers
-    if conf.uri and conf.uri:find("oath-gateway.ems", 1, true) then
-        forward_all = true
-    end
     if forward_all then
         local client_req_headers = core.request.headers(ctx)
         for header, value in pairs(client_req_headers) do
-            if type(value) == "number" then
-                value = tostring(value)
-            end
-            local resolve_value, err = core.utils.resolve_var(value, ctx.var)
-            if not err then
-                auth_headers[header] = resolve_value
-            end
-            if err then
-                core.log.error("failed to resolve variable in forward_all header '",
-                                header, "': ",value,": ",err)
+            if not auth_headers[header] then
+                auth_headers[header] = value
             end
         end
     end
