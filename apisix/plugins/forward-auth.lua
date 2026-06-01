@@ -133,7 +133,7 @@ function _M.access(conf, ctx)
         ["X-Forwarded-Uri"] = ctx.var.request_uri,
         ["X-Forwarded-For"] = core.request.get_remote_client_ip(ctx),
     }
-    core.log.error("auth failed, uri: ", ctx.var.request_uri, ", err: ", err)
+
     if conf.request_method == "POST" then
         auth_headers["Content-Length"] = core.request.header(ctx, "content-length")
         auth_headers["Expect"] = core.request.header(ctx, "expect")
