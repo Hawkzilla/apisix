@@ -158,6 +158,7 @@ function _M.match_and_set(api_ctx, match_only, alt_sni)
     end
 
     local sni = alt_sni
+    local fallback_used = false
     if not sni then
         sni, err = apisix_ssl.server_name()
         if type(sni) ~= "string" then
@@ -174,20 +175,42 @@ function _M.match_and_set(api_ctx, match_only, alt_sni)
     local sni_rev = sni:reverse()
     local ok = radixtree_router:dispatch(sni_rev, nil, api_ctx)
     if not ok then
-        if not alt_sni then
-            -- it is expected that alternative SNI doesn't have a SSL certificate associated
-            -- with it sometimes
-            core.log.error("failed to find any SSL certificate by SNI: ", sni)
+        local local_conf = core.config.local_conf()
+        local fallback_sni = core.table.try_read_attr(local_conf, "apisix", "ssl", "fallback_sni")
+
+        if fallback_sni and fallback_sni ~= sni then
+            core.log.warn("failed to find SSL by requested SNI: ", sni,
+                          ", try fallback SNI: ", fallback_sni)
+
+            local fallback_api_ctx = {}
+            local fallback_ok = radixtree_router:dispatch(fallback_sni:reverse(), nil,
+                                                          fallback_api_ctx)
+            if fallback_ok then
+                api_ctx.matched_ssl = fallback_api_ctx.matched_ssl
+                api_ctx.matched_sni = fallback_api_ctx.matched_sni
+                fallback_used = true
+                ok = true
+            end
         end
-        span:set_status(tracer.status.ERROR, "failed match SNI")
-        span:finish(api_ctx.ngx_ctx)
-        return false
+
+        if not ok then
+            if not alt_sni then
+                -- it is expected that alternative SNI doesn't have a SSL certificate associated
+                -- with it sometimes
+                core.log.error("failed to find any SSL certificate by SNI: ", sni)
+            end
+            span:set_status(tracer.status.ERROR, "failed match SNI")
+            span:finish(api_ctx.ngx_ctx)
+            return false
+        end
     end
     span:finish(api_ctx.ngx_ctx)
 
     if api_ctx.matched_sni == "*" then
         -- wildcard matches everything, no need for further validation
         core.log.info("matched wildcard SSL for SNI: ", sni)
+    elseif fallback_used then
+        core.log.warn("requested SNI ", sni, " fallback to configured SNI certificate")
     elseif type(api_ctx.matched_sni) == "table" then
         local matched = false
         for _, msni in ipairs(api_ctx.matched_sni) do
