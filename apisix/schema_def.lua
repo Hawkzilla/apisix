@@ -630,6 +630,7 @@ _M.route = {
         enable_websocket = {
             description = "enable websocket for request",
             type        = "boolean",
+            default     = true,
         },
 
         status = {
@@ -712,6 +713,7 @@ _M.service = {
         enable_websocket = {
             description = "enable websocket for request",
             type        = "boolean",
+            default     = true,
         },
         hosts = {
             type = "array",
