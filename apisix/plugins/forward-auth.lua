@@ -42,7 +42,7 @@ local schema = {
         },
         request_headers = {
             type = "array",
-            default = {},
+            default = {"cookie", "user-agent"},
             items = {type = "string"},
             description = "client request header that will be sent to the authorization service"
         },
