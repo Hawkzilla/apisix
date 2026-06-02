@@ -788,9 +788,6 @@ function _M.http_access_phase()
         api_ctx.conf_id = route.value.id
     end
 
-    if enable_websocket == nil then
-        enable_websocket = true
-    end
     api_ctx.route_id = route.value.id
     api_ctx.route_name = route.value.name
 
