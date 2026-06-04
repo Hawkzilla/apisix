@@ -77,7 +77,7 @@ local schema = {
             type = "integer",
             minimum = 1,
             maximum = 60000,
-            default = 3000,
+            default = 60000,
             description = "timeout in milliseconds",
         },
         keepalive = {type = "boolean", default = true},
