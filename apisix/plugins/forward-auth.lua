@@ -97,7 +97,6 @@ local schema = {
         },
         whitelist_headers = {
             type = "array",
-            default = {},
             default = {"x-keystone-token"},
             items = {type = "string"},
             description = "list of client request headers (case-insensitive) that are always "
@@ -185,6 +184,7 @@ function _M.access(conf, ctx)
     end
 
     -- forward all client request headers to the authorization service
+    local forward_all = conf.forward_all_headers
     if forward_all then
         local client_req_headers = core.request.headers(ctx)
         for header, value in pairs(client_req_headers) do
