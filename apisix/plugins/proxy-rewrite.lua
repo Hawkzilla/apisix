@@ -269,6 +269,18 @@ do
 
 
 function _M.rewrite(conf, ctx)
+    -- 多区域 IDP 场景:multi-region-idp-proxy 设置 skip_proxy_rewrite 标记,
+    -- 且请求要转发到不同 region(region_url 与当前 host 不一致)时,
+    -- 跳过本插件的改写,避免干扰动态上游。
+    if ctx.skip_proxy_rewrite then
+        core.log.warn("proxy-rewrite: SKIP uri=", ctx.var.uri,
+                      " region_url=", region_url, " host=", ctx.var.host)
+        return
+        core.log.warn("proxy-rewrite: REWRITE inactive uri= , s= ", ctx.var.uri, region_url)
+    end
+
+    core.log.warn("proxy-rewrite: REWRITE active uri=", ctx.var.uri)
+
     for _, name in ipairs(upstream_names) do
         if conf[name] then
             ctx.var[upstream_vars[name]] = conf[name]
