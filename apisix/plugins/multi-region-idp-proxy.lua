@@ -210,7 +210,7 @@ local function set_dynamic_upstream(ctx, conf, host)
     local up_conf = {
         type = "roundrobin",
         scheme = conf.proxy_scheme or "https",
-        pass_host = "node",
+        pass_host = "pass",
         nodes = {
             {host = host, port = port, weight = 1},
         },

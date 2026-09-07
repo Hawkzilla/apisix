@@ -142,6 +142,8 @@ function _M.access(conf, ctx)
 
     if conf.uri and conf.uri:find("oath-gateway.ems", 1, true) then
         auth_headers["X-Forwarded-Method"] = conf.request_method
+        auth_headers["X-Auth-Request-Redirect"] = ngx.unescape_uri(ctx.var.real_request_uri)
+        auth_headers["X-Forwarded-Uri"] = nil
     elseif conf.sync_forwarded_method then
         auth_headers["X-Forwarded-Method"] = conf.request_method
     end
@@ -213,9 +215,10 @@ function _M.access(conf, ctx)
     local httpc = http.new()
     httpc:set_timeout(conf.timeout)
 
-    local uri = conf.uri
-    if uri and string.find(uri, "$request_uri", 1, true) then
-        uri = string.gsub(uri, "$request_uri", ctx.var.request_uri)
+    local uri, err = core.utils.resolve_var(conf.uri, ctx.var)
+    if err then
+        core.log.error("failed to resolve forward-auth uri: ", conf.uri, ", err: ", err)
+        return conf.status_on_error
     end
 
 
