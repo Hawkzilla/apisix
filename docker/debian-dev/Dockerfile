@@ -1,4 +1,20 @@
-FROM debian:bookworm-slim AS build
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+FROM debian:bullseye-slim AS build
 
 ARG ENABLE_PROXY=false
 ARG CODE_PATH
@@ -11,35 +27,37 @@ COPY ${CODE_PATH} /apisix
 WORKDIR /apisix
 
 RUN set -x \
-    && apt-get update \
+    && apt-get -y update --fix-missing \
     && apt-get install -y \
         make \
-        git \
+        git  \
         sudo \
+        ca-certificates \
+        curl \
+        gcc \
+        g++ \
+        cmake \
         libyaml-dev \
+        libxml2-dev \
+        libxslt1-dev \
+        pkg-config \
+        libssl-dev \
+        zlib1g-dev \
     && ls -al \
     && make deps \
     && mkdir -p ${ENV_INST_LUADIR} \
     && cp -r deps ${ENV_INST_LUADIR} \
-    && make install \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    && make install
 
-
-FROM debian:bookworm-slim
+FROM debian:bullseye-slim
 
 ARG ENTRYPOINT_PATH=./docker-entrypoint.sh
 ARG INSTALL_BROTLI=./install-brotli.sh
 
-ENV DEBIAN_FRONTEND=noninteractive
-
-# 换 USTC 源
-RUN apt-get update \
-    && apt-get install -y \
-        libldap2-dev \
-        libyaml-0-2 \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* \
+# Install the runtime libyaml package
+RUN apt-get -y update --fix-missing \
+    && apt-get install -y libldap2-dev libyaml-0-2 libxml2 libxslt1.1 \
+    && apt-get remove --purge --auto-remove -y \
     && mkdir -p /usr/local/apisix/ui
 
 COPY --from=build /usr/local/apisix /usr/local/apisix
@@ -48,11 +66,8 @@ COPY --from=build /usr/bin/apisix /usr/bin/apisix
 COPY --chown=nobody:root ui/ /usr/local/apisix/ui/
 
 COPY ${INSTALL_BROTLI} /install-brotli.sh
-
 RUN chmod +x /install-brotli.sh \
-    && cd / \
-    && ./install-brotli.sh \
-    && rm -rf /install-brotli.sh \
+    && cd / && ./install-brotli.sh && rm -rf /install-brotli.sh \
     && chgrp -R 0 /usr/local/apisix \
     && chmod -R g=u /usr/local/apisix
 
@@ -66,7 +81,6 @@ RUN ln -sf /dev/stdout /usr/local/apisix/logs/access.log \
 EXPOSE 9080 9443
 
 COPY ${ENTRYPOINT_PATH} /docker-entrypoint.sh
-
 RUN chmod +x /docker-entrypoint.sh
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
