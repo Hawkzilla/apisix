@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-FROM debian:bullseye-slim AS build
+FROM ubuntu:22.04 AS build
 
 ARG ENABLE_PROXY=false
 ARG CODE_PATH
@@ -27,6 +27,7 @@ COPY ${CODE_PATH} /apisix
 WORKDIR /apisix
 
 RUN set -x \
+    && apt-get -y update --fix-missing \
     && apt-get install -y \
         make \
         git  \
@@ -48,13 +49,14 @@ RUN set -x \
     && cp -r deps ${ENV_INST_LUADIR} \
     && make install
 
-FROM debian:bullseye-slim
+FROM ubuntu:22.04
 
 ARG ENTRYPOINT_PATH=./docker-entrypoint.sh
 ARG INSTALL_BROTLI=./install-brotli.sh
 
 # Install the runtime libyaml package
-RUN apt-get install -y libldap2-dev libyaml-0-2 libxml2 libxslt1.1 \
+RUN apt-get -y update --fix-missing \
+    && apt-get install -y libldap2-dev libyaml-0-2 libxml2 libxslt1.1 \
     && apt-get remove --purge --auto-remove -y \
     && mkdir -p /usr/local/apisix/ui
 
