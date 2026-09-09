@@ -6,9 +6,6 @@ ARG CODE_PATH
 ENV DEBIAN_FRONTEND=noninteractive
 ENV ENV_INST_LUADIR=/usr/local/apisix
 
-# 换 USTC 源
-RUN sed -i 's|deb.debian.org|mirrors.ustc.edu.cn|g' /etc/apt/sources.list
-
 COPY ${CODE_PATH} /apisix
 
 WORKDIR /apisix
@@ -37,8 +34,7 @@ ARG INSTALL_BROTLI=./install-brotli.sh
 ENV DEBIAN_FRONTEND=noninteractive
 
 # 换 USTC 源
-RUN sed -i 's|deb.debian.org|mirrors.ustc.edu.cn|g' /etc/apt/sources.list \
-    && apt-get update \
+RUN apt-get update \
     && apt-get install -y \
         libldap2-dev \
         libyaml-0-2 \
