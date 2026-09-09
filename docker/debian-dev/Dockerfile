@@ -27,7 +27,6 @@ COPY ${CODE_PATH} /apisix
 WORKDIR /apisix
 
 RUN set -x \
-    && apt-get -y update --fix-missing \
     && apt-get install -y \
         make \
         git  \
@@ -55,8 +54,7 @@ ARG ENTRYPOINT_PATH=./docker-entrypoint.sh
 ARG INSTALL_BROTLI=./install-brotli.sh
 
 # Install the runtime libyaml package
-RUN apt-get -y update --fix-missing \
-    && apt-get install -y libldap2-dev libyaml-0-2 libxml2 libxslt1.1 \
+RUN apt-get install -y libldap2-dev libyaml-0-2 libxml2 libxslt1.1 \
     && apt-get remove --purge --auto-remove -y \
     && mkdir -p /usr/local/apisix/ui
 
