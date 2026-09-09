@@ -1,4 +1,4 @@
-FROM debian:bullseye-slim AS build
+FROM debian:bookworm-slim AS build
 
 ARG ENABLE_PROXY=false
 ARG CODE_PATH
@@ -29,7 +29,7 @@ RUN set -x \
     && rm -rf /var/lib/apt/lists/*
 
 
-FROM debian:bullseye-slim
+FROM debian:bookworm-slim
 
 ARG ENTRYPOINT_PATH=./docker-entrypoint.sh
 ARG INSTALL_BROTLI=./install-brotli.sh
