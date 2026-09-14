@@ -239,15 +239,17 @@ local function set_dynamic_upstream(ctx, conf, host)
 end
 
 local function handle_from_idp(ctx)
+    local new_cookie = cookie("sp_csrftoken")
     local sp_cookie = join_cookie({
         {name = "sessionid", value = cookie("sp_sessionid")},
         {name = "escookie", value = cookie("sp_escookie")},
         {name = "csrftoken", value = cookie("sp_csrftoken")},
+        {name = "x-csrftoken", value = new_cookie},
         {name = "ems_dashboard_api_language", value = cookie("sp_ems_dashboard_api_language")},
     })
 
     set_request_header(ctx, "Cookie", sp_cookie)
-    set_request_header(ctx, "X-Csrftoken", cookie("sp_csrftoken"))
+    set_request_header(ctx, "X-Csrftoken", new_cookie)
     ctx.multi_region_clear_set_cookie = true
 end
 
@@ -290,7 +292,6 @@ function _M.rewrite(conf, ctx)
 
     if raw_cookie:find("region_label=fromidp", 1, true) then
         core.log.warn("multi-region-idp-proxy: branch=from_idp")
-        ctx.skip_proxy_rewrite = true
         handle_from_idp(ctx)
         return
     end
